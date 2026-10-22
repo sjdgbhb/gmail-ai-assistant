@@ -50,14 +50,24 @@ docker run -d --name n8n-agedcare -p 5678:5678 `
 
 ```mermaid
 flowchart TD
-    A(["Gmail Trigger —— 每 5 分钟检查收件箱里的未读邮件，跳过促销 / 社交 / 聊天类邮件"]) --> B(["Classify Email —— LLM 输出 JSON：类别 / 优先级 / 是否需回复 / 跟进项"])
-    B --> C(["Parse Classification —— 容错解析，解析失败默认转人工审核"])
-    C --> D{"需要回复？"}
-    D -- "是" --> E(["Generate Draft Reply —— 按风格指南生成回复正文"])
-    E --> F(["Create Gmail Draft —— 写入原邮件线程的草稿，不发送"])
-    F --> G(["Notify Owner —— 邮件通知负责人：优先级 + 摘要"])
-    D -- "否" --> H(["Notify Skipped —— 通知负责人跳过的邮件及原因"])
+    A[Gmail Trigger] --> B[Classify Email]
+    B --> C[Parse Classification]
+    C --> D{Needs Reply?}
+    D -- "yes" --> E[Generate Draft Reply]
+    E --> F[Create Gmail Draft]
+    F --> G[Notify Owner]
+    D -- "no" --> H[Notify Skipped]
 ```
+
+| 节点 | 说明 |
+|---|---|
+| Gmail Trigger | 每 5 分钟检查收件箱未读邮件，跳过促销 / 社交 / 聊天类 |
+| Classify Email | LLM 输出 JSON：类别 / 优先级 / 是否需回复 / 跟进项 |
+| Parse Classification | 容错解析 LLM 输出，失败默认转人工审核 |
+| Generate Draft Reply | 按风格指南生成回复正文 |
+| Create Gmail Draft | 写入原邮件线程的草稿，**不发送** |
+| Notify Owner | 邮件通知负责人：优先级 + 摘要 |
+| Notify Skipped | 通知被跳过的邮件及原因，防止漏看 |
 
 两条分支都会通知负责人，确保没有任何邮件被静默处理。
 
