@@ -50,7 +50,7 @@ docker run -d --name n8n-agedcare -p 5678:5678 `
 
 ```mermaid
 flowchart TD
-    A["Gmail Trigger<br/>每 5 分钟轮询 INBOX 未读邮件<br/>排除 promotions / social / chat"] --> B["Classify Email<br/>LLM 输出 JSON：类别 / 优先级 /<br/>是否需回复 / 跟进项"]
+    A["Gmail Trigger<br/>每 5 分钟检查收件箱里的未读邮件<br/>跳过促销 / 社交 / 聊天类邮件"] --> B["Classify Email<br/>LLM 输出 JSON：类别 / 优先级 /<br/>是否需回复 / 跟进项"]
     B --> C["Parse Classification<br/>容错解析，解析失败默认转人工审核"]
     C --> D{"需要回复？"}
     D -- "是" --> E["Generate Draft Reply<br/>按风格指南生成回复正文"]
