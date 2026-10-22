@@ -12,7 +12,7 @@ AI 邮件助手（n8n 工作流）：自动分类收件箱邮件、按预设风�
 ## Tech Stack
 
 - **n8n**（self-hosted Docker 或 n8n Cloud），已在 n8n 2.44.5 验证
-- **Gemini 3.1 Flash Lite**（经 OpenAI 兼容端点接入）
+- **Gemini 2.5 Flash**（经 OpenAI 兼容端点接入）
 - **Gmail API**（OAuth2）
 
 ## Prerequisites
@@ -41,7 +41,7 @@ docker run -d --name n8n-agedcare -p 5678:5678 `
 | 位置 | 配置项 |
 |---|---|
 | 所有 Gmail 节点 | 绑定目标邮箱的 Gmail OAuth2 凭据（Google Cloud 开 Gmail API） |
-| 两个 OpenAI 模型节点 | 创建 OpenAI credential：API key 填 Gemini key，Base URL 覆盖为 `https://generativelanguage.googleapis.com/v1beta/openai/`；模型已预设 `gemini-3.1-flash-lite` |
+| 两个 OpenAI 模型节点 | 创建 OpenAI credential：API key 填 Gemini key，Base URL 覆盖为 `https://generativelanguage.googleapis.com/v1beta/openai/`；模型已预设 `gemini-2.5-flash` |
 | `Generate Draft Reply` 的 system prompt | 把 STYLE GUIDE 占位符换成 5-10 封真实邮件样例，署名改真实姓名 |
 | `Notify Owner` / `Notify Skipped` 的 `sendTo` | `owner@example.com` → 负责人邮箱 |
 | 主 workflow 设置 | Settings → Error Workflow 选 `Error Alert` |
