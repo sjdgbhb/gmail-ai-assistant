@@ -71,5 +71,3 @@ workflows/               n8n 工作流 JSON（可直接 import）
 test-samples/            邮件分类/草稿生成测试样例
 .n8n/                    本地 n8n 数据（gitignored，含凭据勿提交）
 ```
-
-> 需求文档为本地工作文件，不入库。
