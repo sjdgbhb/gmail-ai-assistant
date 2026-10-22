@@ -34,19 +34,6 @@ docker run -d --name n8n-agedcare -p 5678:5678 `
 # 4. 按下表完成 Configuration
 ```
 
-## Workflow
-
-```
-Gmail Trigger (每5分钟轮询, INBOX+unread, 排除promotions/social/chat)
-  → Classify Email (LLM: 类别/优先级/是否需回复/跟进项, 输出JSON)
-  → Parse Classification (容错解析, 解析失败默认人工审核)
-  → Needs Reply?
-     ├─ true  → Generate Draft Reply (风格指南 prompt)
-     │          → Create Gmail Draft (同线程, 不发送)
-     │          → Notify Owner (邮件通知优先级+摘要)
-     └─ false → Notify Skipped (通知跳过的邮件及原因, 防止漏看)
-```
-
 ## Configuration
 
 上线前必须完成：
@@ -59,15 +46,22 @@ Gmail Trigger (每5分钟轮询, INBOX+unread, 排除promotions/social/chat)
 | `Notify Owner` / `Notify Skipped` 的 `sendTo` | `owner@example.com` → 负责人邮箱 |
 | 主 workflow 设置 | Settings → Error Workflow 选 `Error Alert` |
 
+## Workflow
+
+```mermaid
+flowchart TD
+    A["Gmail Trigger<br/>每 5 分钟轮询 INBOX 未读邮件<br/>排除 promotions / social / chat"] --> B["Classify Email<br/>LLM 输出 JSON：类别 / 优先级 /<br/>是否需回复 / 跟进项"]
+    B --> C["Parse Classification<br/>容错解析，解析失败默认转人工审核"]
+    C --> D{"需要回复？"}
+    D -- "是" --> E["Generate Draft Reply<br/>按风格指南生成回复正文"]
+    E --> F["Create Gmail Draft<br/>写入原邮件线程的草稿，不发送"]
+    F --> G["Notify Owner<br/>邮件通知负责人：优先级 + 摘要"]
+    D -- "否" --> H["Notify Skipped<br/>通知负责人跳过的邮件及原因"]
+```
+
+两条分支都会通知负责人，确保没有任何邮件被静默处理。
+
 ## Deployment
 
 - **n8n Cloud**：导入 `workflows/` 下 JSON，按 Configuration 绑定凭据
-- **自托管**：常开主机 + Docker（见 Quick Start），可选 Tailscale 做远程维护，数据不出本地
-
-## Project Structure
-
-```
-workflows/               n8n 工作流 JSON（可直接 import）
-test-samples/            邮件分类/草稿生成测试样例
-.n8n/                    本地 n8n 数据（gitignored，含凭据勿提交）
-```
+- **自托管**：常开主机 + Docker（见 Quick Start），数据不出本地
