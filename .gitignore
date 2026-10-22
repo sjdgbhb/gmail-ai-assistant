@@ -10,3 +10,11 @@ Thumbs.db
 .env
 *.key
 *.pem
+
+.env
+.venv/
+.vscode/
+data/
+__pycache__/
+*.pyc
+job.md

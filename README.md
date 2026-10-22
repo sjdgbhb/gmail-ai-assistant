@@ -7,10 +7,14 @@
 ## 文件
 
 ```
-job.md                        本地需求笔记
+job.md                        本地需求笔记(本地,不入库)
 workflows/
   ai-email-assistant.json     主工作流(12 节点)
   error-alert.json            错误告警工作流(任何流程失败→发邮件通知)
+test-samples/
+  sample-emails.md            邮件分类/草稿生成测试样例
+main.py                       uv 项目入口(占位)
+pyproject.toml                uv 项目配置(Python >=3.13)
 .n8n/                         本地 n8n 数据(挂载进容器,勿提交)
 ```
 
