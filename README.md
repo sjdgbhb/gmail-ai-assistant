@@ -50,13 +50,13 @@ docker run -d --name n8n-agedcare -p 5678:5678 `
 
 ```mermaid
 flowchart TD
-    A["Gmail Trigger —— 每 5 分钟检查收件箱里的未读邮件，跳过促销 / 社交 / 聊天类邮件"] --> B["Classify Email —— LLM 输出 JSON：类别 / 优先级 / 是否需回复 / 跟进项"]
-    B --> C["Parse Classification —— 容错解析，解析失败默认转人工审核"]
+    A(["Gmail Trigger —— 每 5 分钟检查收件箱里的未读邮件，跳过促销 / 社交 / 聊天类邮件"]) --> B(["Classify Email —— LLM 输出 JSON：类别 / 优先级 / 是否需回复 / 跟进项"])
+    B --> C(["Parse Classification —— 容错解析，解析失败默认转人工审核"])
     C --> D{"需要回复？"}
-    D -- "是" --> E["Generate Draft Reply —— 按风格指南生成回复正文"]
-    E --> F["Create Gmail Draft —— 写入原邮件线程的草稿，不发送"]
-    F --> G["Notify Owner —— 邮件通知负责人：优先级 + 摘要"]
-    D -- "否" --> H["Notify Skipped —— 通知负责人跳过的邮件及原因"]
+    D -- "是" --> E(["Generate Draft Reply —— 按风格指南生成回复正文"])
+    E --> F(["Create Gmail Draft —— 写入原邮件线程的草稿，不发送"])
+    F --> G(["Notify Owner —— 邮件通知负责人：优先级 + 摘要"])
+    D -- "否" --> H(["Notify Skipped —— 通知负责人跳过的邮件及原因"])
 ```
 
 两条分支都会通知负责人，确保没有任何邮件被静默处理。
