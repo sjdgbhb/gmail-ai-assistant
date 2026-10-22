@@ -1,0 +1,262 @@
+{
+  "name": "AI Email Assistant - Draft Replies for Review",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyX",
+              "value": 5,
+              "unit": "minutes"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "includeSpamTrash": false,
+          "labelIds": ["INBOX"],
+          "q": "is:unread -category:promotions -category:social -is:chat",
+          "readStatus": "unread",
+          "sender": ""
+        },
+        "options": {}
+      },
+      "id": "1a2b3c4d-0001-4000-8000-000000000001",
+      "name": "Gmail Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "prompt": "=From: {{ $json.From.value || $json.headers.from }}\nSubject: {{ $json.Subject || $json.subject }}\nDate: {{ $json.date }}\n\nBody:\n{{ $json.text || $json.snippet }}",
+        "messages": {
+          "messageValues": [
+            {
+              "type": "system",
+              "message": "You are an email triage assistant for a small aged care service provider in Australia. Analyse the incoming email and respond with ONLY a valid JSON object (no markdown fences, no extra text) with these fields:\n\n- category: one of \"client_enquiry\" | \"family_member\" | \"staff\" | \"supplier\" | \"government_regulator\" | \"newsletter\" | \"notification\" | \"spam\" | \"other\"\n- priority: \"urgent\" | \"normal\" | \"low\"  (urgent = client health/safety, complaints, time-sensitive requests)\n- needs_reply: true/false (false for newsletters, automated notifications, spam, pure FYI)\n- skip_reason: short string, only if needs_reply is false, else empty string\n- summary: one sentence summary of what the sender wants\n- follow_ups: array of action items or commitments detected in the email (empty array if none)\n\nPrivacy note: this email may contain sensitive client health information. Do not include any personal health details in the summary; describe the request type only."
+            }
+          ]
+        }
+      },
+      "id": "1a2b3c4d-0002-4000-8000-000000000002",
+      "name": "Classify Email",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f1",
+              "name": "raw",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1a2b3c4d-0003-4000-8000-000000000003",
+      "name": "Extract LLM Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge LLM classification with original email fields for downstream nodes\nconst raw = $json.raw || '';\nconst cleaned = raw.replace(/```json\\n?|```/g, '').trim();\nlet classification;\ntry {\n  classification = JSON.parse(cleaned);\n} catch (e) {\n  // Fail safe: treat unparseable output as needs human review\n  classification = { category: 'other', priority: 'normal', needs_reply: true, skip_reason: '', summary: 'Classification failed - please review manually.', follow_ups: [] };\n}\nconst email = $('Gmail Trigger').first().json;\nreturn [{\n  json: {\n    ...classification,\n    messageId: email.id,\n    threadId: email.threadId,\n    from: email.From?.value || email.headers?.from || '',\n    subject: email.Subject || email.subject || '',\n    body: email.text || email.snippet || ''\n  }\n}];"
+      },
+      "id": "1a2b3c4d-0004-4000-8000-000000000004",
+      "name": "Parse Classification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.needs_reply }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "1a2b3c4d-0005-4000-8000-000000000005",
+      "name": "Needs Reply?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "prompt": "=You are drafting a reply to this email.\n\nFrom: {{ $json.from }}\nSubject: {{ $json.subject }}\nSummary: {{ $json.summary }}\n\nOriginal email:\n{{ $json.body }}\n\nWrite ONLY the reply body (no subject line, no headers). Sign off as the business owner.",
+        "messages": {
+          "messageValues": [
+            {
+              "type": "system",
+              "message": "You are the email writing assistant for the founder of an Australian aged care service. Write a draft reply in his voice.\n\n=== STYLE GUIDE (replace with 5-10 real sample emails from the owner before go-live) ===\n- Warm, professional, plain Australian English\n- Short paragraphs, no jargon, no exclamation marks\n- Acknowledge the person's concern first, then answer\n- Sign-off: \"Best regards,\\n[Owner Name]\"\n=== END STYLE GUIDE ===\n\nRules:\n- Never make commitments on pricing, care plans, or medical matters; say the owner will confirm directly\n- Never include personal health details beyond what the sender already stated\n- If the email involves a complaint, incident, or safeguarding concern, write: \"[URGENT - OWNER TO REVIEW PERSONALLY]\" at the top of the draft, then a brief holding reply\n- Keep it under 150 words unless the question genuinely needs more"
+            }
+          ]
+        }
+      },
+      "id": "1a2b3c4d-0006-4000-8000-000000000006",
+      "name": "Generate Draft Reply",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [1120, 220]
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "operation": "create",
+        "subject": "=Re: {{ $('Parse Classification').item.json.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.text }}",
+        "options": {
+          "sendTo": "={{ $('Parse Classification').item.json.from }}",
+          "threadId": "={{ $('Parse Classification').item.json.threadId }}"
+        }
+      },
+      "id": "1a2b3c4d-0007-4000-8000-000000000007",
+      "name": "Create Gmail Draft",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1340, 220]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "subject": "=Draft ready [{{ $('Parse Classification').item.json.priority.toUpperCase() }}]: {{ $('Parse Classification').item.json.subject }}",
+        "emailType": "text",
+        "message": "=A draft reply is waiting in Gmail → Drafts.\n\nPriority: {{ $('Parse Classification').item.json.priority }}\nCategory: {{ $('Parse Classification').item.json.category }}\nSummary: {{ $('Parse Classification').item.json.summary }}\nFollow-ups detected: {{ JSON.stringify($('Parse Classification').item.json.follow_ups) }}\n\nReview and edit the draft before sending.",
+        "options": {
+          "sendTo": "owner@example.com"
+        }
+      },
+      "id": "1a2b3c4d-0008-4000-8000-000000000008",
+      "name": "Notify Owner",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1560, 220]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Emails that don't need a reply still get a lightweight notification\n// so nothing slips through silently.\nreturn [{ json: $json }];"
+      },
+      "id": "1a2b3c4d-0009-4000-8000-000000000009",
+      "name": "Pass Through",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 400]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "subject": "=Skipped [{{ $('Parse Classification').item.json.category }}]: {{ $('Parse Classification').item.json.subject }}",
+        "emailType": "text",
+        "message": "=This email was auto-skipped (no draft created).\n\nReason: {{ $('Parse Classification').item.json.skip_reason }}\nSummary: {{ $('Parse Classification').item.json.summary }}\n\nIf it actually needs a reply, just reply normally.",
+        "options": {
+          "sendTo": "owner@example.com"
+        }
+      },
+      "id": "1a2b3c4d-0010-4000-8000-000000000010",
+      "name": "Notify Skipped",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1340, 400]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gemini-3.1-flash-lite",
+          "mode": "list"
+        },
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "1a2b3c4d-0011-4000-8000-000000000011",
+      "name": "LLM for Classify",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [240, 520]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gemini-3.1-flash-lite",
+          "mode": "list"
+        },
+        "options": {
+          "temperature": 0.4
+        }
+      },
+      "id": "1a2b3c4d-0012-4000-8000-000000000012",
+      "name": "LLM for Draft",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [1120, 440]
+    }
+  ],
+  "connections": {
+    "Gmail Trigger": {
+      "main": [[{ "node": "Classify Email", "type": "main", "index": 0 }]]
+    },
+    "Classify Email": {
+      "main": [[{ "node": "Extract LLM Output", "type": "main", "index": 0 }]]
+    },
+    "Extract LLM Output": {
+      "main": [[{ "node": "Parse Classification", "type": "main", "index": 0 }]]
+    },
+    "Parse Classification": {
+      "main": [[{ "node": "Needs Reply?", "type": "main", "index": 0 }]]
+    },
+    "Needs Reply?": {
+      "main": [
+        [{ "node": "Generate Draft Reply", "type": "main", "index": 0 }],
+        [{ "node": "Pass Through", "type": "main", "index": 0 }]
+      ]
+    },
+    "Generate Draft Reply": {
+      "main": [[{ "node": "Create Gmail Draft", "type": "main", "index": 0 }]]
+    },
+    "Create Gmail Draft": {
+      "main": [[{ "node": "Notify Owner", "type": "main", "index": 0 }]]
+    },
+    "Pass Through": {
+      "main": [[{ "node": "Notify Skipped", "type": "main", "index": 0 }]]
+    },
+    "LLM for Classify": {
+      "ai_languageModel": [[{ "node": "Classify Email", "type": "ai_languageModel", "index": 0 }]]
+    },
+    "LLM for Draft": {
+      "ai_languageModel": [[{ "node": "Generate Draft Reply", "type": "ai_languageModel", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

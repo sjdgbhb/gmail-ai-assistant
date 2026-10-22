@@ -1,0 +1,12 @@
+# n8n local data (contains credentials, sqlite db, logs)
+.n8n/
+
+# OS / editor
+Thumbs.db
+.DS_Store
+*.log
+
+# Secrets
+.env
+*.key
+*.pem
