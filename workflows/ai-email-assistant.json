@@ -160,16 +160,6 @@
     },
     {
       "parameters": {
-        "jsCode": "// Emails that don't need a reply still get a lightweight notification\n// so nothing slips through silently.\nreturn [{ json: $json }];"
-      },
-      "id": "1a2b3c4d-0009-4000-8000-000000000009",
-      "name": "Pass Through",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [1120, 400]
-    },
-    {
-      "parameters": {
         "resource": "message",
         "operation": "send",
         "subject": "=Skipped [{{ $('Parse Classification').item.json.category }}]: {{ $('Parse Classification').item.json.subject }}",
@@ -236,7 +226,7 @@
     "Needs Reply?": {
       "main": [
         [{ "node": "Generate Draft Reply", "type": "main", "index": 0 }],
-        [{ "node": "Pass Through", "type": "main", "index": 0 }]
+        [{ "node": "Notify Skipped", "type": "main", "index": 0 }]
       ]
     },
     "Generate Draft Reply": {
@@ -244,9 +234,6 @@
     },
     "Create Gmail Draft": {
       "main": [[{ "node": "Notify Owner", "type": "main", "index": 0 }]]
-    },
-    "Pass Through": {
-      "main": [[{ "node": "Notify Skipped", "type": "main", "index": 0 }]]
     },
     "LLM for Classify": {
       "ai_languageModel": [[{ "node": "Classify Email", "type": "ai_languageModel", "index": 0 }]]
