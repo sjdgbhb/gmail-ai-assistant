@@ -1,5 +1,5 @@
 def main():
-    print("Hello from agedcare-automation!")
+    print("Hello from gmail-ai-assistant!")
 
 
 if __name__ == "__main__":

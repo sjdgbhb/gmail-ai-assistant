@@ -1,6 +1,6 @@
 <a id="readme-top"></a>
 
-# agedcare-automation
+# gmail-ai-assistant
 
 **English** | [简体中文](README.zh-CN.md)
 
@@ -49,7 +49,7 @@ Built for: inbox triage at a small Australian aged care provider.
 ### 1. Start n8n
 
 ```powershell
-docker run -d --name n8n-agedcare --restart unless-stopped -p 5678:5678 `
+docker run -d --name n8n-gmail --restart unless-stopped -p 5678:5678 `
   -v "<repo-path>/.n8n:/home/node/.n8n" `
   n8nio/n8n:2.44.5
 ```

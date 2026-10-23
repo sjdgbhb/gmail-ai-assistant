@@ -1,6 +1,6 @@
 <a id="readme-top"></a>
 
-# agedcare-automation
+# gmail-ai-assistant
 
 [English](README.md) | **简体中文**
 
@@ -49,7 +49,7 @@ AI 邮件助手（n8n 工作流）：自动分类收件箱邮件、按预设风�
 ### 1. 启动 n8n
 
 ```powershell
-docker run -d --name n8n-agedcare --restart unless-stopped -p 5678:5678 `
+docker run -d --name n8n-gmail --restart unless-stopped -p 5678:5678 `
   -v "<repo-path>/.n8n:/home/node/.n8n" `
   n8nio/n8n:2.44.5
 ```

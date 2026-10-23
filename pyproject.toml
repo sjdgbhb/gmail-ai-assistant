@@ -1,7 +1,7 @@
 [project]
-name = "agedcare-automation"
+name = "gmail-ai-assistant"
 version = "0.1.0"
-description = "n8n email triage workflows"
+description = "n8n Gmail AI assistant workflows"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = []
