@@ -41,7 +41,7 @@ docker run -d --name n8n-agedcare -p 5678:5678 `
 | 位置 | 配置项 |
 |---|---|
 | 所有 Gmail 节点 | 绑定目标邮箱的 Gmail OAuth2 凭据（Google Cloud 开 Gmail API） |
-| 两个 OpenAI 模型节点 | 创建 OpenAI credential：API key 填 Gemini key，Base URL 覆盖为 `https://generativelanguage.googleapis.com/v1beta/openai/`；模型已预设 `gemini-3.5-flash-lite` |
+| 两个 OpenAI 模型节点 | 创建 OpenAI credential：API key 填 自己的Gemini key，如果没有则去 https://aistudio.google.com/app/api-keys 申请，Base URL 覆盖为 `https://generativelanguage.googleapis.com/v1beta/openai/`；模型已预设 `gemini-3.5-flash-lite` |
 | `Generate Draft Reply` 的 system prompt | 把 STYLE GUIDE 占位符换成 5-10 封真实邮件样例，署名改真实姓名 |
 | `Notify Owner` / `Notify Skipped` 的 `sendTo` | `owner@example.com` → 负责人邮箱 |
 | 主 workflow 设置 | Settings → Error Workflow 选 `Error Alert` |
@@ -79,6 +79,23 @@ flowchart TD
 | Notify Skipped | 通知被跳过的邮件及原因，防止漏看 |
 
 两条分支都会通知负责人，确保没有任何邮件被静默处理。
+
+## AI 输出说明
+
+`Classify Email` 的 system prompt 定义了分类规则，每封邮件输出一个 JSON：
+
+| 字段 | 取值 | 含义 |
+|---|---|---|
+| `category` | `client_enquiry` / `family_member` / `staff` / `supplier` / `government_regulator` / `newsletter` / `notification` / `spam` / `other` | 邮件类别 |
+| `priority` | `urgent` / `normal` / `low` | 优先级；urgent = 健康安全/投诉/时效性强 |
+| `needs_reply` | true / false | 是否需要回复（决定走草稿还是跳过分支） |
+| `skip_reason` | 字符串 | 不回复的原因（needs_reply=false 时） |
+| `summary` | 字符串 | 一句话摘要，**不含健康隐私细节** |
+| `follow_ups` | 数组 | LLM 识别出的跟进事项 |
+
+**查看实际分类结果**：n8n 左栏 Executions → 打开某次执行 → 点 `Parse Classification` 节点，输出 item 的 `json` 即完整结果；优先级同时体现在 `Notify Owner` 邮件标题的 `[URGENT]`/`[NORMAL]`/`[LOW]` 前缀。
+
+要调整分类口径（增删类别、改 urgent 定义），改 `Classify Email` 的 system prompt 即可，代码不用动。可用 `test-samples/sample-emails.md` 的 8 封测试邮件逐类验证效果。
 
 ## Deployment
 
