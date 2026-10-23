@@ -1,40 +1,42 @@
 # agedcare-automation
 
-AI 邮件助手（n8n 工作流）：自动分类收件箱邮件、按预设风格指南生成回复草稿存入 Gmail Drafts，人工审核后才发送——不自动外发。
+**English** | [简体中文](README.zh-CN.md)
 
-场景：澳洲小型 aged care 服务商的收件箱分拣。
+AI email assistant (n8n workflows): classifies inbox emails and drafts replies in a configurable style, saved to Gmail Drafts — a human reviews before anything is sent. Nothing goes out automatically.
+
+Built for: inbox triage at a small Australian aged care provider.
 
 ## Repo Layout
 
-| 路径 | 内容 |
+| Path | Contents |
 |---|---|
-| `workflows/AI Email Assistant - Draft Replies for Review.json` | 主流程：分类 → 生成草稿 → 通知 |
-| `workflows/Error Alert - Notify on Workflow Failure.json` | 错误告警：任一工作流失败邮件通知负责人 |
-| `test-samples/sample-emails.md` | 8 封测试邮件 + 预期行为 + 验证清单 |
-| `test-samples/sample-replies.md` | 回复风格样例（替换 STYLE GUIDE 用） |
+| `workflows/AI Email Assistant - Draft Replies for Review.json` | Main flow: classify → draft → notify |
+| `workflows/Error Alert - Notify on Workflow Failure.json` | Error alert: emails the owner on any workflow failure |
+| `test-samples/sample-emails.md` | 8 test emails + expected behavior + verification checklist |
+| `test-samples/sample-replies.md` | Reply style samples (for the STYLE GUIDE in `Generate Draft Reply`) |
 
 ## Features
 
-- **邮件分类**：LLM 输出类别 / 优先级 / 是否需回复 / 跟进项（JSON）
-- **草稿生成**：按可配置的风格指南生成回复，写入同一线程的 Gmail Draft
-- **人工兜底**：LLM 输出解析失败或无需回复时，均发通知提醒人工处理
-- **错误告警**：任一工作流失败自动邮件通知负责人
+- **Email classification** — LLM outputs category / priority / needs-reply / follow-ups (JSON)
+- **Draft generation** — replies written per a configurable style guide, saved as Gmail drafts in the original thread
+- **Human fallback** — unparseable LLM output or no-reply emails still trigger a notification for manual review
+- **Error alerts** — any workflow failure emails the owner
 
 ## Tech Stack
 
-- **n8n**（self-hosted Docker 或 n8n Cloud），已在 n8n 2.44.5 验证
-- **Gemini 3.5 Flash Lite**（经 Google OpenAI 兼容端点接入）
-- **Gmail API**（OAuth2）
+- **n8n** (self-hosted Docker or n8n Cloud) — verified on n8n 2.44.5
+- **Gemini 3.5 Flash Lite** — via Google's OpenAI-compatible endpoint
+- **Gmail API** — OAuth2
 
 ## Prerequisites
 
-- Docker Desktop（本地部署）或 n8n Cloud 账号
-- Google Cloud Gmail OAuth2配置
-- Gemini API key（https://aistudio.google.com/app/api-keys 免费申请）
+- Docker Desktop (local) or an n8n Cloud account
+- A Google Cloud project (Gmail OAuth2 — see step 2)
+- A Gemini API key (free at https://aistudio.google.com/app/api-keys)
 
 ## Quick Start
 
-### 1. 启动 n8n
+### 1. Start n8n
 
 ```powershell
 docker run -d --name n8n-agedcare --restart unless-stopped -p 5678:5678 `
@@ -42,62 +44,70 @@ docker run -d --name n8n-agedcare --restart unless-stopped -p 5678:5678 `
   n8nio/n8n:2.44.5
 ```
 
-- 挂载路径换成**项目实际路径**；
-- 可选：`-e GENERIC_TIMEZONE=Australia/Sydney`
+- Replace `<repo-path>` with the **absolute path** of this repo; `.n8n/` (gitignored) holds n8n credentials and execution data
+- macOS/Linux: use `\` for line continuation, and run `mkdir .n8n` first (Docker would otherwise create it as root, which the container's `node` user can't write to)
+- Optional: `-e GENERIC_TIMEZONE=Australia/Sydney`
 
-打开 http://localhost:5678，创建 owner 账号。
+Open http://localhost:5678 and create the owner account.
 
-### 2. 配 Google Cloud + Gmail OAuth2
+### 2. Google Cloud + Gmail OAuth2
 
-1. Google Cloud Console → APIs & Services → 启用 **Gmail API**
-2. OAuth consent screen → External → 填应用信息
-3. Credentials → Create **OAuth client ID** → 类型 Web application → Authorized redirect URI 填 n8n 凭据弹窗里显示的 **OAuth Redirect URL**（本地默认 `http://localhost:5678/rest/oauth2-credential/callback`）
-4. n8n → Credentials → New → **Gmail OAuth2 API** → 填 Client ID / Secret → Sign in with Google
+1. Google Cloud Console → APIs & Services → enable the **Gmail API**
+2. OAuth consent screen → External → fill in the app info
+3. Credentials → Create **OAuth client ID** → type *Web application* → Authorized redirect URI = the **OAuth Redirect URL** shown in the n8n credential dialog (local default: `http://localhost:5678/rest/oauth2-credential/callback`)
+4. n8n → Credentials → New → **Gmail OAuth2 API** → paste Client ID / Secret → Sign in with Google
 
-> **重要**：consent screen 必须 **Publish 到 Production**。留在 Testing 状态 refresh token 7 天失效，Gmail 凭据每周断连。不发布也行，但要把目标邮箱加为 test user。
+> **Important**: the consent screen must be **Published to Production**. Left in Testing, the refresh token expires every 7 days and the Gmail credential breaks weekly. (Alternative: keep Testing and add the target mailbox as a test user.)
 
-### 3. 配 Gemini 凭据
+### 3. Gemini credential
 
-n8n → Credentials → New → **OpenAI**：
+n8n → Credentials → New → **OpenAI**:
 
-- API Key：你的 Gemini key
-- Base URL 覆盖为 `https://generativelanguage.googleapis.com/v1beta/openai/`
+- API Key: your Gemini key
+- Override the Base URL with `https://generativelanguage.googleapis.com/v1beta/openai/`
 
-### 4. 导入工作流并配置
+### 4. Import workflows
 
-Create Workflow → Import from File → 依次导入 `workflows/` 两个 JSON，然后按 **Configuration** 完成 ①–④。
+Create Workflow → Import from File → import both JSONs under `workflows/`, then complete the **Configuration** steps ①–④ below.
 
-## Configuration（导入后操作清单）
+## Configuration (post-import checklist)
 
-JSON 已脱敏：不含凭据，占位符为 `owner@example.com`（收件人）和 `[Owner Name]`（署名）——可导入前全局替换，也可导入后在节点里改。以下导入后在节点里修改，按顺序完成：
+The JSONs are sanitized — no credentials are included, and placeholders are `owner@example.com` (recipients) and `[Owner Name]` (signature). You can find-and-replace placeholders in the JSON before import, or edit the nodes afterwards. In order:
 
-**① 绑凭据**——导入的节点没有任何凭据，逐个打开节点选择：
+**① Bind credentials** — imported nodes have none; open each node and select:
 
-| 节点 | 凭据 |
+| Nodes | Credential |
 |---|---|
-| `Gmail Trigger` / `Create Gmail Draft` / `Notify Owner` / `Notify Skipped`（主流程）+ `Send Alert Email`（Error Alert） | 第 2 步建的 Gmail OAuth2 |
-| `LLM for Classify` / `LLM for Draft` | 第 3 步建的 OpenAI；模型下拉为空时手填 `models/gemini-3.5-flash-lite` |
+| `Gmail Trigger` / `Create Gmail Draft` / `Notify Owner` / `Notify Skipped` (main) + `Send Alert Email` (Error Alert) | Gmail OAuth2 from step 2 |
+| `LLM for Classify` / `LLM for Draft` | OpenAI credential from step 3; if the model dropdown is empty, type `models/gemini-3.5-flash-lite` manually |
 
-**② 改占位符**
+**② Replace placeholders**
 
-| 位置 | 改什么 |
+| Location | Change |
 |---|---|
-| `Notify Owner` / `Notify Skipped` / `Send Alert Email` 的 `sendTo` | `owner@example.com` → 负责人邮箱 |
-| `Generate Draft Reply` 的 system prompt | 内置 3 个示例、署名 `[Owner Name]`——换成 3–5 封负责人真实回复并改署名（格式参考 `test-samples/sample-replies.md`） |
+| `sendTo` of `Notify Owner` / `Notify Skipped` / `Send Alert Email` | `owner@example.com` → the owner's email |
+| system prompt of `Generate Draft Reply` | ships with 3 sample replies signed `[Owner Name]` — replace with 3–5 real owner replies and fix the signature (format reference: `test-samples/sample-replies.md`) |
 
-**③ 检查导入丢失项**（n8n 2.x schema 差异，不随 JSON 生效）：
+**③ Check settings that don't survive import** (n8n 2.x schema differences):
 
-| 节点 | 检查项 |
+| Node | Check |
 |---|---|
-| `Classify Email` / `Generate Draft Reply` | **Source for Prompt** 为 `Define Below`，并确认 Prompt 文本存在 |
-| 两个 OpenAI 模型节点 | **Options → Use Responses API 关闭**——Gemini 兼容端点只支持 chat completions，开着会报 404 |
-| `Parse Classification` | Language 保持 `JavaScript`（Python 模式需容器内装 Python 3，官方镜像没有） |
-| `Error Alert` workflow | 先 **Publish**，主流程 Error Workflow 下拉才可选；错误告警只对生产执行触发，手动 Execute 不发 |
+| `Classify Email` / `Generate Draft Reply` | **Source for Prompt** = `Define Below`, and the prompt text is present |
+| Both OpenAI model nodes | **Options → Use Responses API: OFF** — Gemini's compatible endpoint only supports chat completions; leaving it on returns 404 |
+| `Parse Classification` | Language stays `JavaScript` (Python mode requires Python 3 inside the container — not in the official image) |
+| `Error Alert` workflow | **Publish it first**, or it won't appear in the main workflow's Error Workflow dropdown; error alerts only fire on production executions, not manual runs |
 
-**④ 发布**
+**④ Publish**
 
-1. Publish `Error Alert` → 打开主流程 → Settings → Error Workflow 选 `Error Alert`
-2. Publish 主流程——不发布 Gmail Trigger 不会轮询
+1. Publish `Error Alert` → open the main workflow → Settings → Error Workflow → select `Error Alert`
+2. Publish the main workflow — the Gmail Trigger won't poll until published
+
+## Verification
+
+1. Make sure **both** workflows are published
+2. From a **different mailbox** (not the bound one — the trigger filters `-from:me`), send a few test emails from `test-samples/sample-emails.md` to the bound mailbox
+3. Wait up to 5 minutes for the poll (or temporarily remove `-from:me` from the trigger's `q` filter while testing)
+4. Check against the checklist at the end of `sample-emails.md`: drafts appear in Gmail Drafts, Notify Owner / Notify Skipped emails arrive, Executions are all green
 
 ## Workflow
 
@@ -112,46 +122,46 @@ flowchart TD
     D -- "no" --> H[Notify Skipped]
 ```
 
-| 节点 | 说明 |
+| Node | What it does |
 |---|---|
-| Gmail Trigger | 每 5 分钟检查收件箱未读邮件，跳过促销 / 社交 / 聊天 / 自己发的邮件 |
-| Classify Email | LLM 输出 JSON：类别 / 优先级 / 是否需回复 / 跟进项 |
-| Parse Classification | 容错解析 LLM 输出，失败默认转人工审核（走 yes 分支并标注） |
-| Generate Draft Reply | 按风格指南生成回复正文 |
-| Create Gmail Draft | 写入原邮件线程的草稿，**不发送** |
-| Notify Owner | 邮件通知负责人：优先级 + 摘要 |
-| Notify Skipped | 通知被跳过的邮件及原因，防止漏看 |
+| Gmail Trigger | polls unread inbox mail every 5 min; skips promotions / social / chats / self-sent mail |
+| Classify Email | LLM outputs JSON: category / priority / needs-reply / follow-ups |
+| Parse Classification | fault-tolerant parsing; failures default to human review (yes branch, flagged) |
+| Generate Draft Reply | writes the reply body per the style guide |
+| Create Gmail Draft | saves the draft into the original thread — **never sends** |
+| Notify Owner | emails the owner: priority + summary |
+| Notify Skipped | reports skipped emails and reasons, so nothing is silently dropped |
 
-两条分支都会通知负责人，确保没有任何邮件被静默处理。通知邮件由绑定邮箱自己发出，会被 `-from:me` 过滤，不会自我循环触发。
+Both branches notify the owner — no email is processed silently. Notification emails are sent from the bound mailbox itself and are filtered by `-from:me`, so they never re-trigger the flow.
 
-## AI 输出说明
+## AI Output Schema
 
-`Classify Email` 的 system prompt 定义了分类规则，每封邮件输出一个 JSON：
+`Classify Email`'s system prompt defines the rules; each email yields one JSON object:
 
-| 字段 | 取值 | 含义 |
+| Field | Values | Meaning |
 |---|---|---|
-| `category` | `client_enquiry` / `family_member` / `staff` / `supplier` / `government_regulator` / `newsletter` / `notification` / `spam` / `other` | 邮件类别 |
-| `priority` | `urgent` / `normal` / `low` | 优先级；urgent = 健康安全/投诉/时效性强 |
-| `needs_reply` | true / false | 是否需要回复（决定走草稿还是跳过分支） |
-| `skip_reason` | 字符串 | 不回复的原因（needs_reply=false 时） |
-| `summary` | 字符串 | 一句话摘要，**不含健康隐私细节** |
-| `follow_ups` | 数组 | LLM 识别出的跟进事项 |
+| `category` | `client_enquiry` / `family_member` / `staff` / `supplier` / `government_regulator` / `newsletter` / `notification` / `spam` / `other` | email category |
+| `priority` | `urgent` / `normal` / `low` | urgent = health/safety, complaints, time-sensitive |
+| `needs_reply` | true / false | routes to the draft vs. skip branch |
+| `skip_reason` | string | why no reply (when `needs_reply` is false) |
+| `summary` | string | one-line summary — **no personal health details** |
+| `follow_ups` | array | action items detected by the LLM |
 
-**查看实际分类结果**：n8n 左栏 Executions → 打开某次执行 → 点 `Parse Classification` 节点，输出 item 的 `json` 即完整结果；优先级同时体现在 `Notify Owner` 邮件标题的 `[URGENT]`/`[NORMAL]`/`[LOW]` 前缀。
+**Viewing actual results**: n8n sidebar → Executions → open a run → inspect the `Parse Classification` node's output `json`. Priority also appears as `[URGENT]` / `[NORMAL]` / `[LOW]` in the `Notify Owner` subject line.
 
-要调整分类口径（增删类别、改 urgent 定义），改 `Classify Email` 的 system prompt 即可，代码不用动。
+To change categories or the urgent definition, edit the `Classify Email` system prompt — no code changes needed.
 
 ## Deployment
 
-- **n8n Cloud**：导入两个 JSON → 绑凭据 → Publish。OAuth Redirect URL 会变成 `https://<instance>.app.n8n.cloud/...`，记得加进 Google Cloud OAuth client
-- **自托管**：Quick Start 的 docker 命令已含 `--restart unless-stopped`。Gmail Trigger 是**轮询型**，n8n 不需要公网可达；若改用域名 + HTTPS 访问，同步更新 Google Cloud 里的 redirect URI 即可
+- **n8n Cloud**: import both JSONs → bind credentials → Publish. The OAuth Redirect URL becomes `https://<instance>.app.n8n.cloud/...` — add it to the Google Cloud OAuth client
+- **Self-hosted**: the docker command above already includes `--restart unless-stopped`. The Gmail Trigger is **polling-based**, so n8n does not need to be publicly reachable. If you later serve n8n over a domain + HTTPS, update the redirect URI in Google Cloud
 
 ## Troubleshooting
 
-| 症状 | 原因 / 处理 |
+| Symptom | Cause / fix |
 |---|---|
-| 导入后节点提示需要 credential | 正常——JSON 已脱敏不含凭据，按 Configuration ① 逐节点选择 |
-| OpenAI 节点报 404 | `Use Responses API` 没关，见 Configuration 表 |
-| Gmail 凭据隔几天失效 | consent screen 还在 Testing，Publish 到 Production |
-| 工作流一直不触发 | 主流程没 Publish；或测试邮件是绑定邮箱自己发的 |
-| 容器重建后凭据/执行记录丢失 | `-v` 挂载路径不对，检查 `.n8n/` 目录是否有文件生成 |
+| Nodes ask for a credential after import | expected — the JSONs ship without credentials; select one per Configuration ① |
+| OpenAI node returns 404 | `Use Responses API` still on — see Configuration ③ |
+| Gmail credential dies every few days | consent screen still in Testing → Publish to Production |
+| Workflow never triggers | main workflow not published; or the test mail was sent from the bound mailbox itself |
+| Credentials / executions gone after container rebuild | `-v` mount path wrong — check whether `.n8n/` has files |
