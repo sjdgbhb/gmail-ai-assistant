@@ -1,3 +1,5 @@
+<a id="readme-top"></a>
+
 # agedcare-automation
 
 [English](README.md) | **简体中文**
@@ -15,6 +17,8 @@ AI 邮件助手（n8n 工作流）：自动分类收件箱邮件、按预设风�
 | `test-samples/sample-emails.md` | 8 封测试邮件 + 预期行为 + 验证清单 |
 | `test-samples/sample-replies.md` | 回复风格样例（替换 STYLE GUIDE 用） |
 
+<p align="right">(<a href="#readme-top">返回顶部</a>)</p>
+
 ## 功能特性
 
 - **邮件分类**：LLM 输出类别 / 优先级 / 是否需回复 / 跟进项（JSON）
@@ -22,17 +26,23 @@ AI 邮件助手（n8n 工作流）：自动分类收件箱邮件、按预设风�
 - **人工兜底**：LLM 输出解析失败或无需回复时，均发通知提醒人工处理
 - **错误告警**：任一工作流失败自动邮件通知负责人
 
+<p align="right">(<a href="#readme-top">返回顶部</a>)</p>
+
 ## 技术栈
 
 - **n8n**（self-hosted Docker 或 n8n Cloud），已在 n8n 2.44.5 验证
 - **Gemini 3.5 Flash Lite**（经 Google OpenAI 兼容端点接入）
 - **Gmail API**（OAuth2）
 
+<p align="right">(<a href="#readme-top">返回顶部</a>)</p>
+
 ## 前置要求
 
 - Docker Desktop（本地部署）或 n8n Cloud 账号
 - Google Cloud Gmail OAuth2 配置
 - Gemini API key（https://aistudio.google.com/app/api-keys 免费申请）
+
+<p align="right">(<a href="#readme-top">返回顶部</a>)</p>
 
 ## 快速开始
 
@@ -70,6 +80,8 @@ n8n → Credentials → New → **OpenAI**：
 
 Create Workflow → Import from File → 依次导入 `workflows/` 两个 JSON，然后按 **配置清单** 完成 ①–④。
 
+<p align="right">(<a href="#readme-top">返回顶部</a>)</p>
+
 ## 配置清单（导入后操作）
 
 JSON 已脱敏：不含凭据，占位符为 `owner@example.com`（收件人）和 `[Owner Name]`（署名）——可导入前全局替换，也可导入后在节点里改。以下导入后在节点里修改，按顺序完成：
@@ -102,12 +114,16 @@ JSON 已脱敏：不含凭据，占位符为 `owner@example.com`（收件人）�
 1. Publish `Error Alert` → 打开主流程 → Settings → Error Workflow 选 `Error Alert`
 2. Publish 主流程——不发布 Gmail Trigger 不会轮询
 
+<p align="right">(<a href="#readme-top">返回顶部</a>)</p>
+
 ## 验证
 
 1. 确认**两个** workflow 都已 Publish
 2. **用另一个邮箱**（不能用绑定邮箱自己发——trigger 含 `-from:me` 过滤，自发邮件不触发）发几封 `test-samples/sample-emails.md` 里的测试邮件到绑定邮箱
 3. 等最多 5 分钟轮询（测试期也可临时把 `-from:me` 从 trigger 的 `q` 里去掉）
 4. 按 `sample-emails.md` 末尾清单核对：Drafts 里有草稿、收到 Notify Owner / Notify Skipped 邮件、Executions 全绿
+
+<p align="right">(<a href="#readme-top">返回顶部</a>)</p>
 
 ## 工作流程
 
@@ -134,6 +150,8 @@ flowchart TD
 
 两条分支都会通知负责人，确保没有任何邮件被静默处理。通知邮件由绑定邮箱自己发出，会被 `-from:me` 过滤，不会自我循环触发。
 
+<p align="right">(<a href="#readme-top">返回顶部</a>)</p>
+
 ## AI 输出说明
 
 `Classify Email` 的 system prompt 定义了分类规则，每封邮件输出一个 JSON：
@@ -151,10 +169,14 @@ flowchart TD
 
 要调整分类口径（增删类别、改 urgent 定义），改 `Classify Email` 的 system prompt 即可，代码不用动。
 
+<p align="right">(<a href="#readme-top">返回顶部</a>)</p>
+
 ## 部署
 
 - **n8n Cloud**：导入两个 JSON → 绑凭据 → Publish。OAuth Redirect URL 会变成 `https://<instance>.app.n8n.cloud/...`，记得加进 Google Cloud OAuth client
 - **自托管**：快速开始的 docker 命令已含 `--restart unless-stopped`。Gmail Trigger 是**轮询型**，n8n 不需要公网可达；若改用域名 + HTTPS 访问，同步更新 Google Cloud 里的 redirect URI 即可
+
+<p align="right">(<a href="#readme-top">返回顶部</a>)</p>
 
 ## 故障排查
 
@@ -165,3 +187,5 @@ flowchart TD
 | Gmail 凭据隔几天失效 | consent screen 还在 Testing，Publish 到 Production |
 | 工作流一直不触发 | 主流程没 Publish；或测试邮件是绑定邮箱自己发的 |
 | 容器重建后凭据/执行记录丢失 | `-v` 挂载路径不对，检查 `.n8n/` 目录是否有文件生成 |
+
+<p align="right">(<a href="#readme-top">返回顶部</a>)</p>

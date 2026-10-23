@@ -1,3 +1,5 @@
+<a id="readme-top"></a>
+
 # agedcare-automation
 
 **English** | [简体中文](README.zh-CN.md)
@@ -15,6 +17,8 @@ Built for: inbox triage at a small Australian aged care provider.
 | `test-samples/sample-emails.md` | 8 test emails + expected behavior + verification checklist |
 | `test-samples/sample-replies.md` | Reply style samples (for the STYLE GUIDE in `Generate Draft Reply`) |
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ## Features
 
 - **Email classification** — LLM outputs category / priority / needs-reply / follow-ups (JSON)
@@ -22,17 +26,23 @@ Built for: inbox triage at a small Australian aged care provider.
 - **Human fallback** — unparseable LLM output or no-reply emails still trigger a notification for manual review
 - **Error alerts** — any workflow failure emails the owner
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ## Tech Stack
 
 - **n8n** (self-hosted Docker or n8n Cloud) — verified on n8n 2.44.5
 - **Gemini 3.5 Flash Lite** — via Google's OpenAI-compatible endpoint
 - **Gmail API** — OAuth2
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ## Prerequisites
 
 - Docker Desktop (local) or an n8n Cloud account
 - A Google Cloud project (Gmail OAuth2 — see step 2)
 - A Gemini API key (free at https://aistudio.google.com/app/api-keys)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Quick Start
 
@@ -70,6 +80,8 @@ n8n → Credentials → New → **OpenAI**:
 
 Create Workflow → Import from File → import both JSONs under `workflows/`, then complete the **Configuration** steps ①–④ below.
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ## Configuration (post-import checklist)
 
 The JSONs are sanitized — no credentials are included, and placeholders are `owner@example.com` (recipients) and `[Owner Name]` (signature). You can find-and-replace placeholders in the JSON before import, or edit the nodes afterwards. In order:
@@ -102,12 +114,16 @@ The JSONs are sanitized — no credentials are included, and placeholders are `o
 1. Publish `Error Alert` → open the main workflow → Settings → Error Workflow → select `Error Alert`
 2. Publish the main workflow — the Gmail Trigger won't poll until published
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ## Verification
 
 1. Make sure **both** workflows are published
 2. From a **different mailbox** (not the bound one — the trigger filters `-from:me`), send a few test emails from `test-samples/sample-emails.md` to the bound mailbox
 3. Wait up to 5 minutes for the poll (or temporarily remove `-from:me` from the trigger's `q` filter while testing)
 4. Check against the checklist at the end of `sample-emails.md`: drafts appear in Gmail Drafts, Notify Owner / Notify Skipped emails arrive, Executions are all green
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Workflow
 
@@ -134,6 +150,8 @@ flowchart TD
 
 Both branches notify the owner — no email is processed silently. Notification emails are sent from the bound mailbox itself and are filtered by `-from:me`, so they never re-trigger the flow.
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ## AI Output Schema
 
 `Classify Email`'s system prompt defines the rules; each email yields one JSON object:
@@ -151,10 +169,14 @@ Both branches notify the owner — no email is processed silently. Notification 
 
 To change categories or the urgent definition, edit the `Classify Email` system prompt — no code changes needed.
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ## Deployment
 
 - **n8n Cloud**: import both JSONs → bind credentials → Publish. The OAuth Redirect URL becomes `https://<instance>.app.n8n.cloud/...` — add it to the Google Cloud OAuth client
 - **Self-hosted**: the docker command above already includes `--restart unless-stopped`. The Gmail Trigger is **polling-based**, so n8n does not need to be publicly reachable. If you later serve n8n over a domain + HTTPS, update the redirect URI in Google Cloud
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Troubleshooting
 
@@ -165,3 +187,5 @@ To change categories or the urgent definition, edit the `Classify Email` system 
 | Gmail credential dies every few days | consent screen still in Testing → Publish to Production |
 | Workflow never triggers | main workflow not published; or the test mail was sent from the bound mailbox itself |
 | Credentials / executions gone after container rebuild | `-v` mount path wrong — check whether `.n8n/` has files |
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
