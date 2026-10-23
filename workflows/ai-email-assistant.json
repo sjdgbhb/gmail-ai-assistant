@@ -189,7 +189,7 @@
       "parameters": {
         "model": {
           "__rl": true,
-          "value": "gemini-2.5-flash",
+          "value": "gemini-3.5-flash-lite",
           "mode": "list"
         },
         "options": {
@@ -206,7 +206,7 @@
       "parameters": {
         "model": {
           "__rl": true,
-          "value": "gemini-2.5-flash",
+          "value": "gemini-3.5-flash-lite",
           "mode": "list"
         },
         "options": {
