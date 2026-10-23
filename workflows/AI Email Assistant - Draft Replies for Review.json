@@ -15,8 +15,10 @@
         "simple": false,
         "filters": {
           "includeSpamTrash": false,
-          "labelIds": ["INBOX"],
-          "q": "is:unread -category:promotions -category:social -is:chat",
+          "labelIds": [
+            "INBOX"
+          ],
+          "q": "is:unread -category:promotions -category:social -is:chat -from:me",
           "readStatus": "unread",
           "sender": ""
         },
@@ -26,15 +28,18 @@
       "name": "Gmail Trigger",
       "type": "n8n-nodes-base.gmailTrigger",
       "typeVersion": 1.2,
-      "position": [0, 300]
+      "position": [
+        0,
+        304
+      ]
     },
     {
       "parameters": {
-        "prompt": "=From: {{ $json.From.value || $json.headers.from }}\nSubject: {{ $json.Subject || $json.subject }}\nDate: {{ $json.date }}\n\nBody:\n{{ $json.text || $json.snippet }}",
+        "promptType": "define",
+        "text": "=From: {{ $json.From.value || $json.headers.from }}\nSubject: {{ $json.Subject || $json.subject }}\nDate: {{ $json.date }}\n\nBody:\n{{ $json.text || $json.snippet }}",
         "messages": {
           "messageValues": [
             {
-              "type": "system",
               "message": "You are an email triage assistant for a small aged care service provider in Australia. Analyse the incoming email and respond with ONLY a valid JSON object (no markdown fences, no extra text) with these fields:\n\n- category: one of \"client_enquiry\" | \"family_member\" | \"staff\" | \"supplier\" | \"government_regulator\" | \"newsletter\" | \"notification\" | \"spam\" | \"other\"\n- priority: \"urgent\" | \"normal\" | \"low\"  (urgent = client health/safety, complaints, time-sensitive requests)\n- needs_reply: true/false (false for newsletters, automated notifications, spam, pure FYI)\n- skip_reason: short string, only if needs_reply is false, else empty string\n- summary: one sentence summary of what the sender wants\n- follow_ups: array of action items or commitments detected in the email (empty array if none)\n\nPrivacy note: this email may contain sensitive client health information. Do not include any personal health details in the summary; describe the request type only."
             }
           ]
@@ -44,7 +49,10 @@
       "name": "Classify Email",
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.5,
-      "position": [240, 300]
+      "position": [
+        192,
+        304
+      ]
     },
     {
       "parameters": {
@@ -64,7 +72,10 @@
       "name": "Extract LLM Output",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [460, 300]
+      "position": [
+        496,
+        304
+      ]
     },
     {
       "parameters": {
@@ -74,7 +85,10 @@
       "name": "Parse Classification",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [680, 300]
+      "position": [
+        688,
+        304
+      ]
     },
     {
       "parameters": {
@@ -82,7 +96,8 @@
           "options": {
             "caseSensitive": true,
             "leftValue": "",
-            "typeValidation": "strict"
+            "typeValidation": "strict",
+            "version": 1
           },
           "conditions": [
             {
@@ -103,16 +118,19 @@
       "name": "Needs Reply?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [900, 300]
+      "position": [
+        912,
+        304
+      ]
     },
     {
       "parameters": {
-        "prompt": "=You are drafting a reply to this email.\n\nFrom: {{ $json.from }}\nSubject: {{ $json.subject }}\nSummary: {{ $json.summary }}\n\nOriginal email:\n{{ $json.body }}\n\nWrite ONLY the reply body (no subject line, no headers). Sign off as the business owner.",
+        "promptType": "define",
+        "text": "=You are drafting a reply to this email.\n\nFrom: {{ $json.from }}\nSubject: {{ $json.subject }}\nSummary: {{ $json.summary }}\n\nOriginal email:\n{{ $json.body }}\n\nWrite ONLY the reply body (no subject line, no headers). Sign off as the business owner.",
         "messages": {
           "messageValues": [
             {
-              "type": "system",
-              "message": "You are the email writing assistant for the founder of an Australian aged care service. Write a draft reply in his voice.\n\n=== STYLE GUIDE: match these real replies (replace name \"Helen\" before go-live) ===\n- Warm, professional, plain Australian English\n- Short paragraphs, no jargon, no exclamation marks\n- Acknowledge the person's concern first, then answer\n- Sign-off: \"Kind regards,\\nHelen\"\n\nExample 1 (enquiry):\nHi Sarah,\nThanks for getting in touch — caring full-time is a big job.\nWe do offer respite care, and Christmas is always busy, so good thinking ahead. Whether your mum qualifies for government funding depends on her assessment, and I'd rather talk it through properly than guess by email.\nAre you free for a quick call this week?\nKind regards,\nHelen\n\nExample 2 (complaint):\nHi Michael,\nI'm very sorry — your father should never have been left waiting like that, especially twice in one month.\nI've looked into what happened and I'm reviewing the roster so this doesn't recur. I'd like to call you today to explain properly — could you let me know a good time?\nYou have my personal commitment that we'll do better.\nKind regards,\nHelen\n=== END STYLE GUIDE ===\n\nRules:\n- Never make commitments on pricing, care plans, or medical matters; say the owner will confirm directly\n- Never include personal health details beyond what the sender already stated\n- If the email involves a complaint, incident, or safeguarding concern, write: \"[URGENT - OWNER TO REVIEW PERSONALLY]\" at the top of the draft, then a brief holding reply\n- Keep it under 150 words unless the question genuinely needs more"
+              "message": "=You are the email writing assistant for the founder of an Australian aged care service. Write a draft reply in his voice.  === STYLE GUIDE: match these real replies === Example 1 (respite care): Hi Sarah,  Thanks for getting in touch, and I can certainly understand needing a break — caring full-time is a big job.  We do offer respite care, and Christmas is always a busy period for us, so it's good that you're planning ahead. Whether your mum qualifies for government funding or a short private stay depends on her assessment, and I'd rather talk it through properly than guess at the details by email.  Are you free for a quick call this week? I'm around most afternoons.  Kind regards, [Owner Name]   Example 2 (carer no-show): Hi Michael,  I'm very sorry — your father should never have been left waiting like that, especially twice in one month. Missing a medication prompt is serious and I understand why you're upset.  I've already looked into what happened this morning and I'm reviewing the roster so this doesn't recur. I'd like to call you today to explain properly and hear any concerns you have — could you let me know a good time?  You have my personal commitment that we'll do better.  Kind regards, [Owner Name]  Example 3 (supplier): Hi Tom,  Thanks for the updated pricing schedule. I've had a quick look and there are a couple of items I'd like to clarify before we continue — mainly the weekend delivery surcharge, which is new.  Could you give me a call this week to run through it? Should only take ten minutes.  Regards, [Owner Name] === END STYLE GUIDE ===  Rules: - Never make commitments on pricing, care plans, or medical matters; say the owner will confirm directly - Never include personal health details beyond what the sender already stated - If the email involves a complaint, incident, or safeguarding concern, write: \"[URGENT - OWNER TO REVIEW PERSONALLY]\" at the top of the draft, then a brief holding reply - Keep it under 150 words unless the question genuinely needs more"
             }
           ]
         }
@@ -121,67 +139,73 @@
       "name": "Generate Draft Reply",
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.5,
-      "position": [1120, 220]
+      "position": [
+        1104,
+        96
+      ]
     },
     {
       "parameters": {
         "resource": "draft",
-        "operation": "create",
         "subject": "=Re: {{ $('Parse Classification').item.json.subject }}",
-        "emailType": "text",
         "message": "={{ $json.text }}",
         "options": {
-          "sendTo": "={{ $('Parse Classification').item.json.from }}",
-          "threadId": "={{ $('Parse Classification').item.json.threadId }}"
+          "threadId": "={{ $('Parse Classification').item.json.threadId }}",
+          "sendTo": "={{ $('Parse Classification').item.json.from }}"
         }
       },
       "id": "1a2b3c4d-0007-4000-8000-000000000007",
       "name": "Create Gmail Draft",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
-      "position": [1340, 220]
+      "position": [
+        1392,
+        96
+      ]
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "send",
+        "sendTo": "owner@example.com",
         "subject": "=Draft ready [{{ $('Parse Classification').item.json.priority.toUpperCase() }}]: {{ $('Parse Classification').item.json.subject }}",
         "emailType": "text",
         "message": "=A draft reply is waiting in Gmail → Drafts.\n\nPriority: {{ $('Parse Classification').item.json.priority }}\nCategory: {{ $('Parse Classification').item.json.category }}\nSummary: {{ $('Parse Classification').item.json.summary }}\nFollow-ups detected: {{ JSON.stringify($('Parse Classification').item.json.follow_ups) }}\n\nReview and edit the draft before sending.",
-        "options": {
-          "sendTo": "owner@example.com"
-        }
+        "options": {}
       },
       "id": "1a2b3c4d-0008-4000-8000-000000000008",
       "name": "Notify Owner",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
-      "position": [1560, 220]
+      "position": [
+        1568,
+        96
+      ]
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "send",
+        "sendTo": "owner@example.com",
         "subject": "=Skipped [{{ $('Parse Classification').item.json.category }}]: {{ $('Parse Classification').item.json.subject }}",
         "emailType": "text",
         "message": "=This email was auto-skipped (no draft created).\n\nReason: {{ $('Parse Classification').item.json.skip_reason }}\nSummary: {{ $('Parse Classification').item.json.summary }}\n\nIf it actually needs a reply, just reply normally.",
-        "options": {
-          "sendTo": "owner@example.com"
-        }
+        "options": {}
       },
       "id": "1a2b3c4d-0010-4000-8000-000000000010",
       "name": "Notify Skipped",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
-      "position": [1340, 400]
+      "position": [
+        1120,
+        512
+      ]
     },
     {
       "parameters": {
         "model": {
           "__rl": true,
-          "value": "gemini-3.5-flash-lite",
-          "mode": "list"
+          "value": "models/gemini-3.5-flash-lite",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3.5-flash-lite"
         },
+        "responsesApiEnabled": false,
         "options": {
           "temperature": 0.2
         }
@@ -190,15 +214,20 @@
       "name": "LLM for Classify",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
-      "position": [240, 520]
+      "position": [
+        192,
+        528
+      ]
     },
     {
       "parameters": {
         "model": {
           "__rl": true,
-          "value": "gemini-3.5-flash-lite",
-          "mode": "list"
+          "value": "models/gemini-3.5-flash-lite",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3.5-flash-lite"
         },
+        "responsesApiEnabled": false,
         "options": {
           "temperature": 0.4
         }
@@ -207,43 +236,124 @@
       "name": "LLM for Draft",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
-      "position": [1120, 440]
+      "position": [
+        1104,
+        320
+      ]
     }
   ],
+  "pinData": {},
   "connections": {
     "Gmail Trigger": {
-      "main": [[{ "node": "Classify Email", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Classify Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Classify Email": {
-      "main": [[{ "node": "Extract LLM Output", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Extract LLM Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Extract LLM Output": {
-      "main": [[{ "node": "Parse Classification", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Parse Classification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Parse Classification": {
-      "main": [[{ "node": "Needs Reply?", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Needs Reply?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Needs Reply?": {
       "main": [
-        [{ "node": "Generate Draft Reply", "type": "main", "index": 0 }],
-        [{ "node": "Notify Skipped", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Generate Draft Reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify Skipped",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Generate Draft Reply": {
-      "main": [[{ "node": "Create Gmail Draft", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Create Gmail Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Create Gmail Draft": {
-      "main": [[{ "node": "Notify Owner", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Notify Owner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "LLM for Classify": {
-      "ai_languageModel": [[{ "node": "Classify Email", "type": "ai_languageModel", "index": 0 }]]
+      "ai_languageModel": [
+        [
+          {
+            "node": "Classify Email",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
     },
     "LLM for Draft": {
-      "ai_languageModel": [[{ "node": "Generate Draft Reply", "type": "ai_languageModel", "index": 0 }]]
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Draft Reply",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "binaryMode": "separate"
   },
-  "pinData": {}
+  "tags": []
 }

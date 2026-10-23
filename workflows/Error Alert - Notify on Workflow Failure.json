@@ -7,33 +7,46 @@
       "name": "Error Trigger",
       "type": "n8n-nodes-base.errorTrigger",
       "typeVersion": 1,
-      "position": [0, 300]
+      "position": [
+        0,
+        304
+      ]
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "send",
+        "sendTo": "owner@example.com",
         "subject": "=[ALERT] n8n workflow failed: {{ $json.workflow.name }}",
         "emailType": "text",
         "message": "=Workflow \"{{ $json.workflow.name }}\" failed.\n\nExecution URL: {{ $json.execution.url }}\nLast node: {{ $json.execution.lastNodeExecuted }}\nError: {{ $json.execution.error.message }}\n\nPlease check the n8n dashboard.",
-        "options": {
-          "sendTo": "owner@example.com"
-        }
+        "options": {}
       },
       "id": "e1a2b3c4-0002-4000-8000-000000000002",
       "name": "Send Alert Email",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
-      "position": [240, 300]
+      "position": [
+        240,
+        304
+      ]
     }
   ],
+  "pinData": {},
   "connections": {
     "Error Trigger": {
-      "main": [[{ "node": "Send Alert Email", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Send Alert Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "binaryMode": "separate"
   },
-  "pinData": {}
+  "tags": []
 }
