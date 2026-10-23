@@ -46,6 +46,15 @@ docker run -d --name n8n-agedcare -p 5678:5678 `
 | `Notify Owner` / `Notify Skipped` 的 `sendTo` | `owner@example.com` → 负责人邮箱 |
 | 主 workflow 设置 | Settings → Error Workflow 选 `Error Alert` |
 
+导入后以下设置不会从 JSON 带过来，需逐项检查（n8n 2.x schema 差异）：
+
+| 节点 | 检查项 |
+|---|---|
+| `Classify Email` / `Generate Draft Reply` | **Source for Prompt** 设为 `Define Below`，并确认 Prompt 文本存在 |
+| 两个 OpenAI 模型节点 | **Options → Use Responses API 关闭**——Gemini 兼容端点只支持 chat completions，开着会报 404 |
+| `Parse Classification` | Language 保持 `JavaScript`（Python 模式需容器内安装 Python 3，官方镜像没有） |
+| `Error Alert` workflow | 先 **Publish**，主流程的 Error Workflow 下拉才可选；错误告警只对生产执行触发，手动 Execute 不发 |
+
 ## Workflow
 
 ```mermaid
